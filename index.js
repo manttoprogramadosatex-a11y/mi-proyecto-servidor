@@ -3,7 +3,7 @@ const qrcode = require('qrcode-terminal');
 const axios = require('axios');
 
 // Pega aquí la URL que obtuviste en el Paso 2 de Google Apps Script
-const APPS_SCRIPT_URL = 'ESCRIBE_AQUI_TU_URL_DE_APPS_SCRIPT';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwO-g-OjU2-cpYkXEHFDox1Mvp4omaFysqvQaK2p01BGcmdio4IHya8TNqNBrO2XH65/exec';
 
 const client = new Client({
     authStrategy: new LocalAuth(),
