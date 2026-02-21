@@ -6,8 +6,8 @@ const express = require('express');
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Aquí debes pegar la URL que obtuviste de Google Apps Script (el paso gratuito)
-const APPS_SCRIPT_URL = 'TU_URL_DE_APPS_SCRIPT_AQUI';
+//
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwO-g-OjU2-cpYkXEHFDox1Mvp4omaFysqvQaK2p01BGcmdio4IHya8TNqNBrO2XH65/exec';
 
 app.get('/', (req, res) => res.send('Bot Satex Vivo'));
 app.listen(port, () => console.log(`Servidor escuchando en puerto ${port}`));
