@@ -1,17 +1,16 @@
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 const axios = require('axios');
-const express = require('express'); 
+const express = require('express');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-// URL de tu implementación de Google Apps Script 
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwO-g-OjU2-cpYkXEHFDox1Mvp4omaFysqvQaK2p01BGcmdio4IHya8TNqNBrO2XH65/exec';
+// Aquí debes pegar la URL que obtuviste de Google Apps Script (el paso gratuito)
+const APPS_SCRIPT_URL = 'TU_URL_DE_APPS_SCRIPT_AQUI';
 
-// Mantener el servidor vivo para Render
 app.get('/', (req, res) => res.send('Bot Satex Vivo'));
-app.listen(port, () => console.log(`Servidor en puerto ${port}`));
+app.listen(port, () => console.log(`Servidor escuchando en puerto ${port}`));
 
 const client = new Client({
     authStrategy: new LocalAuth(),
@@ -23,10 +22,10 @@ const client = new Client({
 
 client.on('qr', qr => {
     qrcode.generate(qr, {small: true});
-    console.log('ESCANEA EL QR ABAJO:');
+    console.log('ESCANEA EL QR QUE APARECE ABAJO:');
 });
 
-client.on('ready', () => console.log('✅ Bot Satex Vinculado!'));
+client.on('ready', () => console.log('✅ ¡Bot Satex Vinculado y Listo!'));
 
 client.on('message', async msg => {
     if (!msg.body.includes('.')) return;
@@ -45,7 +44,7 @@ client.on('message', async msg => {
         try {
             await axios.post(APPS_SCRIPT_URL, datos);
             msg.reply(`🛠️ *REGISTRO EXITOSO*\nID: *${idOT}*`);
-        } catch (e) { console.error('Error:', e); }
+        } catch (e) { console.error('Error al enviar datos:', e); }
     }
 });
 
