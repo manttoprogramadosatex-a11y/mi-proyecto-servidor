@@ -6,8 +6,8 @@ const express = require('express');
 const app = express();
 const port = process.env.PORT || 10000;
 
-// SUSTITUYE ESTA URL POR LA TUYA DE GOOGLE APPS SCRIPT
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwO-g-OjU2-cpYkXEHFDox1Mvp4omaFysqvQaK2p01BGcmdio4IHya8TNqNBrO2XH65/exec';
+// SUSTITUYE CON TU URL DE GOOGLE APPS SCRIPT
+const APPS_SCRIPT_URL = 'TU_URL_AQUI';
 
 app.get('/', (req, res) => res.send('Servidor Satex Activo'));
 app.listen(port, () => console.log(`Puerto abierto en ${port}`));
@@ -16,7 +16,16 @@ const client = new Client({
     authStrategy: new LocalAuth(),
     puppeteer: { 
         headless: "new",
-        args: ['--no-sandbox', '--disable-setuid-sandbox'] 
+        args: [
+            '--no-sandbox', 
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-accelerated-2d-canvas',
+            '--no-first-run',
+            '--no-zygote',
+            '--single-process',
+            '--disable-gpu'
+        ] 
     }
 });
 
