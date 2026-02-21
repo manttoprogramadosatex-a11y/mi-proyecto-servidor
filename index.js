@@ -6,32 +6,33 @@ const express = require('express');
 const app = express();
 const port = process.env.PORT || 10000;
 
-// URL DE TU GOOGLE APPS SCRIPT
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwO-g-OjU2-cpYkXEHFDox1Mvp4omaFysqvQaK2p01BGcmdio4IHya8TNqNBrO2XH65/exec';
+// SUSTITUYE CON TU URL DE GOOGLE APPS SCRIPT (LA QUE TERMINA EN /exec)
+const APPS_SCRIPT_URL = 'TU_URL_AQUI';
 
-app.get('/', (req, res) => res.send('Bot Satex Operativo'));
-app.listen(port, () => console.log(`🚀 Puerto ${port} abierto`));
+app.get('/', (req, res) => res.send('Bot Satex Online'));
+app.listen(port, () => console.log(`🚀 Servidor en puerto ${port}. Esperando QR...`));
 
 const client = new Client({
     authStrategy: new LocalAuth(),
     puppeteer: { 
-        headless: true,
+        headless: "new",
         args: [
             '--no-sandbox', 
             '--disable-setuid-sandbox',
             '--disable-dev-shm-usage',
-            '--single-process'
+            '--single-process',
+            '--no-zygote'
         ] 
     }
 });
 
 client.on('qr', qr => {
-    console.log('--- COPIA Y ESCANEA EL QR ABAJO ---');
+    console.log('--- ¡QR GENERADO! ESCANEA AHORA ---');
     qrcode.generate(qr, {small: true});
 });
 
 client.on('ready', () => {
-    console.log('✅ CONEXIÓN EXITOSA: El bot está listo.');
+    console.log('✅ BOT VINCULADO: Ya puedes cerrar Render y funcionará solo.');
 });
 
 client.on('message', async msg => {
@@ -50,8 +51,10 @@ client.on('message', async msg => {
         };
         try {
             await axios.post(APPS_SCRIPT_URL, datos);
-            msg.reply(`🛠️ *REGISTRO SATEX*\nID: *${idOT}*\nEstado: Registrada en Excel`);
-        } catch (e) { console.log('Error al enviar:', e.message); }
+            msg.reply(`🛠️ *ORDEN SATEX REGISTRADA*\nID: *${idOT}*\nEstatus: Guardada en Bitácora`);
+        } catch (e) {
+            console.log('Error al enviar a Sheets:', e.message);
+        }
     }
 });
 
