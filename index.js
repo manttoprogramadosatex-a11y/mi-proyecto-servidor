@@ -4,28 +4,27 @@ const axios = require('axios');
 const express = require('express');
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 10000;
 
-//
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwO-g-OjU2-cpYkXEHFDox1Mvp4omaFysqvQaK2p01BGcmdio4IHya8TNqNBrO2XH65/exec';
 
-app.get('/', (req, res) => res.send('Bot Satex Vivo'));
-app.listen(port, () => console.log(`Servidor escuchando en puerto ${port}`));
+app.get('/', (req, res) => res.send('Servidor Satex Listo'));
+app.listen(port, () => console.log(`Servidor activo en puerto ${port}`));
 
 const client = new Client({
     authStrategy: new LocalAuth(),
     puppeteer: { 
-        executablePath: '/usr/bin/google-chrome-stable',
+        headless: true,
         args: ['--no-sandbox', '--disable-setuid-sandbox'] 
     }
 });
 
 client.on('qr', qr => {
     qrcode.generate(qr, {small: true});
-    console.log('ESCANEA EL QR QUE APARECE ABAJO:');
+    console.log('POR FAVOR, ESCANEA EL QR ABAJO:');
 });
 
-client.on('ready', () => console.log('✅ ¡Bot Satex Vinculado y Listo!'));
+client.on('ready', () => console.log('✅ BOT SATEX VINCULADO CORRECTAMENTE'));
 
 client.on('message', async msg => {
     if (!msg.body.includes('.')) return;
@@ -44,7 +43,7 @@ client.on('message', async msg => {
         try {
             await axios.post(APPS_SCRIPT_URL, datos);
             msg.reply(`🛠️ *REGISTRO EXITOSO*\nID: *${idOT}*`);
-        } catch (e) { console.error('Error al enviar datos:', e); }
+        } catch (e) { console.error('Error de envío:', e.message); }
     }
 });
 
