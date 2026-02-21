@@ -6,35 +6,33 @@ const express = require('express');
 const app = express();
 const port = process.env.PORT || 10000;
 
-// 
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwO-g-OjU2-cpYkXEHFDox1Mvp4omaFysqvQaK2p01BGcmdio4IHya8TNqNBrO2XH65/exec';
+// URL DE TU GOOGLE APPS SCRIPT
+const APPS_SCRIPT_URL = 'TU_URL_AQUI';
 
-app.get('/', (req, res) => res.send('Servidor Satex Activo'));
-app.listen(port, () => console.log(`Puerto abierto en ${port}`));
+app.get('/', (req, res) => res.send('Bot Satex Operativo'));
+app.listen(port, () => console.log(`🚀 Puerto ${port} abierto`));
 
 const client = new Client({
     authStrategy: new LocalAuth(),
     puppeteer: { 
-        headless: "new",
+        headless: true,
         args: [
             '--no-sandbox', 
             '--disable-setuid-sandbox',
             '--disable-dev-shm-usage',
-            '--disable-accelerated-2d-canvas',
-            '--no-first-run',
-            '--no-zygote',
-            '--single-process',
-            '--disable-gpu'
+            '--single-process'
         ] 
     }
 });
 
 client.on('qr', qr => {
+    console.log('--- COPIA Y ESCANEA EL QR ABAJO ---');
     qrcode.generate(qr, {small: true});
-    console.log('ESCANEA EL QR ABAJO:');
 });
 
-client.on('ready', () => console.log('✅ BOT SATEX VINCULADO CORRECTAMENTE'));
+client.on('ready', () => {
+    console.log('✅ CONEXIÓN EXITOSA: El bot está listo.');
+});
 
 client.on('message', async msg => {
     if (!msg.body.includes('.')) return;
@@ -52,8 +50,8 @@ client.on('message', async msg => {
         };
         try {
             await axios.post(APPS_SCRIPT_URL, datos);
-            msg.reply(`🛠️ *REGISTRO EXITOSO*\nID: *${idOT}*`);
-        } catch (e) { console.error('Error:', e.message); }
+            msg.reply(`🛠️ *REGISTRO SATEX*\nID: *${idOT}*\nEstado: Registrada en Excel`);
+        } catch (e) { console.log('Error al enviar:', e.message); }
     }
 });
 
