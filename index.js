@@ -6,7 +6,7 @@ const express = require('express');
 const app = express();
 const port = process.env.PORT || 10000;
 
-// SUSTITUYE CON TU URL DE GOOGLE APPS SCRIPT
+// 
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwO-g-OjU2-cpYkXEHFDox1Mvp4omaFysqvQaK2p01BGcmdio4IHya8TNqNBrO2XH65/exec';
 
 app.get('/', (req, res) => res.send('Servidor Satex Activo'));
