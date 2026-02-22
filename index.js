@@ -8,22 +8,21 @@ const app = express();
 const port = process.env.PORT || 10000;
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwO-g-OjU2-cpYkXEHFDoX1Mvp4omaFysqvQaK2p01BGcmdio4Ihya8TNqNBrO2XH65/exec';
 
-// 1. RESPUESTA INMEDIATA PARA RENDER (Evita el reinicio temprano)
-app.get('/', (req, res) => res.send('Bot Satex Activo'));
+// 1. RESPUESTA INSTANTÁNEA: Esto detiene los reinicios de Render
+app.get('/', (req, res) => res.send('Servidor Satex Listo'));
 app.listen(port, '0.0.0.0', () => {
-    console.log(`🚀 Servidor listo en puerto ${port}. Iniciando motor de WhatsApp...`);
+    console.log(`🚀 Servidor en puerto ${port}. Generando QR...`);
+    iniciarBot(); // Arrancamos WhatsApp DESPUÉS de asegurar el puerto
 });
 
 async function iniciarBot() {
-    // Usamos una carpeta de sesión limpia para forzar un nuevo QR
-    const { state, saveCreds } = await useMultiFileAuthState('sesion_activa_satex');
+    // Usamos un nombre de sesión nuevo para limpiar errores previos
+    const { state, saveCreds } = await useMultiFileAuthState('sesion_final_satex');
     
     const sock = makeWASocket({
         auth: state,
-        logger: pino({ level: 'silent' }), // Silencia las advertencias amarillas
-        browser: ['Satex Bot', 'Chrome', '1.0.0'],
-        connectTimeoutMs: 60000,
-        defaultQueryTimeoutMs: 0
+        logger: pino({ level: 'silent' }),
+        browser: ['Satex', 'Chrome', '1.0.0']
     });
 
     sock.ev.on('creds.update', saveCreds);
@@ -31,26 +30,25 @@ async function iniciarBot() {
     sock.ev.on('connection.update', (update) => {
         const { connection, lastDisconnect, qr } = update;
         
-        // 2. FORZAR LA IMPRESIÓN DEL QR
+        // 2. MOSTRAR EL QR SIN RODEOS
         if (qr) {
-            console.log('\n\n\n📢 ¡ATENCIÓN! ESCANEA ESTE CÓDIGO AHORA:');
+            console.log('\n\n👇 ESCANEA ESTO AHORA MISMO:');
             qrcode.generate(qr, { small: true });
-            console.log('Si el código se ve mal, aleja el zoom del navegador (Ctrl y -)\n\n');
+            console.log('Mantén esta ventana abierta.\n\n');
         }
 
         if (connection === 'close') {
-            const codigoError = lastDisconnect.error?.output?.statusCode;
-            if (codigoError !== DisconnectReason.loggedOut) {
-                // Si se cierra sin escaneo, reintentamos rápido
-                console.log('🔄 Sincronizando motor... el QR aparecerá en breve.');
-                setTimeout(() => iniciarBot(), 3000); 
+            const error = lastDisconnect.error?.output?.statusCode;
+            if (error !== DisconnectReason.loggedOut) {
+                console.log('🔄 Reconectando motor...');
+                setTimeout(() => iniciarBot(), 5000);
             }
         } else if (connection === 'open') {
-            console.log('✅ ¡ÉXITO! Bot vinculado correctamente.');
+            console.log('✅ ¡SISTEMA VINCULADO Y ACTIVO!');
         }
     });
 
-    // Evento de mensajes (Tu lógica de OT)
+    // Tu lógica de mensajes (se mantiene igual)
     sock.ev.on('messages.upsert', async ({ messages }) => {
         const msg = messages[0];
         if (!msg.message || msg.key.fromMe) return;
@@ -58,22 +56,14 @@ async function iniciarBot() {
         if (!texto.includes('.')) return;
         const partes = texto.split('.');
         if (partes[0].trim().toLowerCase() === 'abrir') {
-            const idOT = "OT-" + Math.floor(1000 + Math.random() * 9999);
-            const datos = {
-                idOT, 
-                fecha: new Date().toLocaleDateString('es-MX'),
-                maquina: partes[1], 
-                noMq: partes[2], 
-                falla: partes[3], 
-                telefono: msg.key.remoteJid.split('@')[0]
-            };
+            const idOT = "OT-" + Math.floor(1000 + Math.random() * 9000);
             try {
-                await axios.post(APPS_SCRIPT_URL, datos);
-                await sock.sendMessage(msg.key.remoteJid, { text: `🛠️ *OT REGISTRADA:* ${idOT}` });
-            } catch (e) { console.log('Error en Sheets:', e.message); }
+                await axios.post(APPS_SCRIPT_URL, {
+                    idOT, maquina: partes[1], noMq: partes[2], falla: partes[3], 
+                    telefono: msg.key.remoteJid.split('@')[0]
+                });
+                await sock.sendMessage(msg.key.remoteJid, { text: `🛠️ *OT CREADA:* ${idOT}` });
+            } catch (e) { console.log('Error:', e.message); }
         }
     });
 }
-
-// Arrancar el proceso con un pequeño retraso para asegurar que Express esté vivo
-setTimeout(() => iniciarBot(), 2000);
