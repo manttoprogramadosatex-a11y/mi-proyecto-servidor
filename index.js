@@ -8,18 +8,19 @@ const app = express();
 const port = process.env.PORT || 10000;
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwO-g-OjU2-cpYkXEHFDoX1Mvp4omaFysqvQaK2p01BGcmdio4Ihya8TNqNBrO2XH65/exec';
 
-app.get('/', (req, res) => res.send('Bot Satex Operativo'));
-app.listen(port, '0.0.0.0', () => console.log(`🚀 Servidor activo en puerto ${port}`));
+app.get('/', (req, res) => res.send('Bot Satex Activo'));
+app.listen(port, '0.0.0.0', () => console.log(`🚀 Servidor en puerto ${port}`));
 
 async function iniciarBot() {
-    // Creamos la carpeta auth_satex para guardar la sesión
     const { state, saveCreds } = await useMultiFileAuthState('auth_satex');
     
     const sock = makeWASocket({
         auth: state,
-        // Eliminamos la opción obsoleta que causaba los mensajes amarillos
         logger: pino({ level: 'silent' }),
-        browser: ['Satex Bot', 'MacOS', '3.0.0']
+        browser: ['MacOS', 'Chrome', '10.15.7'],
+        connectTimeoutMs: 60000, // Aumentamos tiempo de espera
+        defaultQueryTimeoutMs: 0,
+        keepAliveIntervalMs: 10000
     });
 
     sock.ev.on('creds.update', saveCreds);
@@ -27,22 +28,23 @@ async function iniciarBot() {
     sock.ev.on('connection.update', (update) => {
         const { connection, lastDisconnect, qr } = update;
         
-        // ESTA ES LA PARTE IMPORTANTE: Muestra el QR manualmente
         if (qr) {
             console.log('==================================================');
-            console.log('👇 ESCANEA ESTE CÓDIGO QR CON TU WHATSAPP:');
+            console.log('✅ CÓDIGO QR LISTO - ESCANEA AHORA:');
             console.log('==================================================');
             qrcode.generate(qr, { small: true });
+            console.log('==================================================');
         }
 
         if (connection === 'close') {
-            const error = lastDisconnect.error?.output?.statusCode;
-            if (error !== DisconnectReason.loggedOut) {
-                console.log('Reconectando...');
-                iniciarBot();
+            const errorCod = lastDisconnect.error?.output?.statusCode;
+            // Solo reconectar si no fue un cierre voluntario
+            if (errorCod !== DisconnectReason.loggedOut) {
+                console.log('🔄 Sincronizando sesión... espere un momento');
+                setTimeout(() => iniciarBot(), 5000); // Espera 5 segundos para no saturar
             }
         } else if (connection === 'open') {
-            console.log('✅ CONEXIÓN EXITOSA: El bot ya está vinculado.');
+            console.log('🎉 ¡EXITO! BOT SATEX VINCULADO Y TRABAJANDO');
         }
     });
 
@@ -68,9 +70,9 @@ async function iniciarBot() {
 
             try {
                 await axios.post(APPS_SCRIPT_URL, datos);
-                await sock.sendMessage(msg.key.remoteJid, { text: `🛠️ *REGISTRO SATEX*\nID: *${idOT}*\nEstado: Guardado en Excel` });
+                await sock.sendMessage(msg.key.remoteJid, { text: `🛠️ *REGISTRO SATEX*\nID: *${idOT}*\nEstado: Guardado en Bitácora` });
             } catch (e) {
-                console.log('Error al enviar a Sheets:', e.message);
+                console.log('Error al enviar datos:', e.message);
             }
         }
     });
