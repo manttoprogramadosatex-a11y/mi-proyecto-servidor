@@ -8,10 +8,10 @@ const app = express();
 const port = process.env.PORT || 10000;
 let qrActual = null;
 
-// TU URL DE GOOGLE SHEETS
+// URL DE TU SCRIPT DE GOOGLE (Ya integrada)
 const URL_SHEETS = 'https://script.google.com/macros/s/AKfycbzV4y8eeTI4U7CUjKveRJy8B6eNuRqr3vHyavywTOAj4GKV3OClQ348EQfTUR5fnCnb/exec';
 
-// Función para poner la primera letra en mayúscula (Capitalize)
+// Función para que cada palabra inicie con Mayúscula en la hoja de Excel
 const capitalizar = (texto) => {
     if (!texto) return "N/A";
     return texto.trim().toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase());
@@ -21,22 +21,24 @@ app.get('/', async (req, res) => {
     if (qrActual) {
         const qrImagen = await qrcode.toDataURL(qrActual);
         res.send(`<html><body style="background:#000;color:white;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;text-align:center;">
-            <h1 style="color:#25D366;font-size:30px;">📱 BOT SATEX: LISTO</h1>
-            <div style="background:white;padding:20px;border-radius:15px;"><img src="${qrImagen}" style="width:300px;height:300px;"/></div>
-            <p style="margin-top:20px;color:#888;">Escanea para activar el sistema.</p>
+            <h1 style="color:#25D366;font-size:30px;">📱 BOT SATEX: PANEL DE CONTROL</h1>
+            <div style="background:white;padding:20px;border-radius:15px;box-shadow: 0 0 20px #25D366;">
+                <img src="${qrImagen}" style="width:300px;height:300px;"/>
+            </div>
+            <p style="margin-top:20px;color:#888;">Si ya vinculaste y no responde, cierra sesión en el móvil y refresca esta página.</p>
         </body></html>`);
     } else {
-        res.send('<html><body style="background:#000;color:white;display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;"><h2>🔄 Verificando sesión...</h2></body></html>');
+        res.send('<html><body style="background:#000;color:white;display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;text-align:center;"><h2>🔄 Verificando sesión...<br>Si no carga el QR, espera 10 segundos y presiona F5.</h2></body></html>');
     }
 });
 
 app.listen(port, '0.0.0.0', () => {
-    console.log('🚀 SERVIDOR ONLINE');
+    console.log('🚀 SERVIDOR WEB SATEX ONLINE');
     iniciarWhatsApp();
 });
 
 async function iniciarWhatsApp() {
-    const { state, saveCreds } = await useMultiFileAuthState('sesion_estable_satex');
+    const { state, saveCreds } = await useMultiFileAuthState('sesion_final_estable');
     const { version } = await fetchLatestBaileysVersion();
 
     const sock = makeWASocket({
@@ -48,37 +50,67 @@ async function iniciarWhatsApp() {
 
     sock.ev.on('creds.update', saveCreds);
 
-    sock.ev.on('connection.update', (u) => {
-        if (u.qr) qrActual = u.qr;
-        if (u.connection === 'open') { qrActual = null; console.log('✅✅ CONECTADO ✅✅'); }
-        if (u.connection === 'close') setTimeout(() => iniciarWhatsApp(), 15000);
+    sock.ev.on('connection.update', (update) => {
+        const { connection, lastDisconnect, qr } = update;
+        
+        if (qr) {
+            qrActual = qr;
+            console.log('✅ NUEVO QR LISTO PARA ESCANEAR');
+        }
+
+        if (connection === 'close') {
+            qrActual = null;
+            const error = lastDisconnect?.error?.output?.statusCode;
+            console.log(`🔄 Conexión cerrada (${error}). Reconectando en 15s...`);
+            setTimeout(() => iniciarWhatsApp(), 15000);
+        } else if (connection === 'open') {
+            qrActual = null;
+            console.log('✅✅ BOT SATEX CONECTADO Y OPERATIVO ✅✅');
+        }
     });
 
-    sock.ev.on('messages.upsert', async ({ messages }) => {
+    sock.ev.on('messages.upsert', async ({ messages, type }) => {
+        if (type !== 'notify') return;
         const msg = messages[0];
         if (!msg.message || msg.key.fromMe) return;
 
-        // .toLowerCase() hace que no importe si es mayúscula o minúscula
-        const textoRecibido = (msg.message.conversation || msg.message.extendedTextMessage?.text || "").toLowerCase();
+        // Convertimos todo a minúsculas para que no importe cómo lo escriba el usuario
+        const textoOriginal = (msg.message.conversation || msg.message.extendedTextMessage?.text || "");
+        const textoParaProcesar = textoOriginal.toLowerCase();
         const jid = msg.key.remoteJid;
 
-        if (textoRecibido.startsWith('abrir.')) {
-            const partes = textoRecibido.split('.');
+        if (textoParaProcesar.startsWith('abrir.')) {
+            const partes = textoOriginal.split('.'); // Usamos el original para mantener limpieza
+            
+            if (partes.length < 4) {
+                return await sock.sendMessage(jid, { text: "⚠️ *Formato incorrecto*\nUsa: abrir.maquina.numero.falla" });
+            }
+
             const idOT = "OT-" + Math.floor(1000 + Math.random() * 9000);
             
+            // Datos formateados para la hoja (Primera letra Mayúscula)
+            const datosParaEnviar = {
+                idOT: idOT,
+                maquina: capitalizar(partes[1]),
+                noMq: partes[2].toUpperCase().trim(),
+                falla: capitalizar(partes[3]),
+                telefono: jid.split('@')[0]
+            };
+
             try {
-                // Enviamos los datos capitalizados a la hoja
-                await axios.post(URL_SHEETS, {
-                    idOT: idOT,
-                    maquina: capitalizar(partes[1]),
-                    noMq: partes[2] ? partes[2].toUpperCase() : 'N/A', // El número lo dejamos en mayúsculas
-                    falla: capitalizar(partes[3]),
-                    telefono: jid.split('@')[0]
-                });
+                await axios.post(URL_SHEETS, datosParaEnviar);
                 
-                await sock.sendMessage(jid, { text: `🛠️ *OT GENERADA:* ${idOT}\n✅ Registrado: *${capitalizar(partes[1])}* - *${partes[2]}*` });
+                await sock.sendMessage(jid, { 
+                    text: `🛠️ *OT GENERADA:* ${idOT}\n\n` +
+                          `📌 *Máquina:* ${datosParaEnviar.maquina}\n` +
+                          `🔢 *No. Mq:* ${datosParaEnviar.noMq}\n` +
+                          `⚠️ *Falla:* ${datosParaEnviar.falla}\n\n` +
+                          `✅ *Satex System:* Reporte guardado con éxito.`
+                });
+                console.log(`✅ Reporte enviado: ${idOT}`);
             } catch (e) {
-                await sock.sendMessage(jid, { text: `❌ Error de conexión con Sheets.` });
+                console.log("❌ Error en Sheets:", e.message);
+                await sock.sendMessage(jid, { text: "❌ *Error:* No se pudo guardar en Google Sheets. Revisa el Script." });
             }
         }
     });
