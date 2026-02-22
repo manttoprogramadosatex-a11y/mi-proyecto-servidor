@@ -1,5 +1,7 @@
 const axios = require('axios');
-const URL_SHEETS = 'https://script.google.com/macros/s/AKfycbxEc0HgCWuhmImajmS04al4pjXsJhQavfcmQxRPb68ULQmeciXlM_34pSqB5lBdNYSh/exec'; // <--- Pon tu URL aquí
+
+// REEMPLAZA CON TU URL DE GOOGLE APPS SCRIPT
+const URL_SHEETS = 'https://script.google.com/macros/s/TU_ID_AQUI/exec';
 
 const capitalizar = (texto) => {
     if (!texto) return "N/A";
@@ -42,10 +44,9 @@ async function procesarComando(textoOriginal, jid, sock) {
             });
 
         } catch (e) {
-            console.error("Error comunicando con Sheets:", e.message);
+            console.log("Error en Sheets:", e.message);
         }
     }
 }
 
-// ESTA LÍNEA ES VITAL PARA QUE INDEX.JS VEA EL CÓDIGO
 module.exports = { procesarComando };
