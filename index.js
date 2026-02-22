@@ -8,7 +8,7 @@ const app = express();
 const port = process.env.PORT || 10000;
 let qrActual = null;
 
-// URL DE TU SCRIPT DE GOOGLE (Verificada)
+// URL
 const URL_SHEETS = 'https://script.google.com/macros/s/AKfycbzV4y8eeTI4U7CUjKveRJy8B6eNuRqr3vHyavywTOAj4GKV3OClQ348EQfTUR5fnCnb/exec';
 
 // Función para poner Mayúscula Inicial en cada palabra
