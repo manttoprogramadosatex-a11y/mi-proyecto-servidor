@@ -1,7 +1,7 @@
 const axios = require('axios');
 
 // REEMPLAZA CON TU URL DE GOOGLE APPS SCRIPT
-const URL_SHEETS = 'https://script.google.com/macros/s/TU_ID_AQUI/exec';
+const URL_SHEETS = 'https://script.google.com/macros/s/AKfycbzUyBXvbkdf-Bxg47UIV5Fz8E6chykIIkncfbXGLXOCM-vt3OZ6DB6AKcFik5SScZ2S/exec';
 
 const capitalizar = (texto) => {
     if (!texto) return "N/A";
