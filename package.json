@@ -1,7 +1,7 @@
 {
-  "name": "bot-satex-final",
+  "name": "bot-satex-pro",
   "version": "1.0.0",
-  "description": "Bot Satex System",
+  "description": "Bot con separación de lógica y conexión persistente",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
