@@ -1,5 +1,5 @@
 const axios = require('axios');
-const URL_SHEETS = 'TU_URL_DE_APPS_SCRIPT'; // Asegúrate de actualizarla
+const URL_SHEETS = 'TU_URL_DE_APPS_SCRIPT'; // Asegúrate de actualizarla con la última implementación
 
 const capitalizar = (texto) => {
     if (!texto) return "N/A";
@@ -23,9 +23,10 @@ async function procesarComando(textoOriginal, jid, sock) {
             });
 
             const res = respuesta.data;
+            // Generamos el ID de WhatsApp para la notificación silenciosa
             const jidTecnico = res.telefonoTecnico + "@s.whatsapp.net";
 
-            // MENSAJE CON NOMBRE EXTRAÍDO DE EXCEL
+            // MENSAJE FINAL: Solo con el Nombre del Mecánico
             const mensajeRespuesta = 
 `🛠️ *OS GENERADA:* ${res.idOS}
 
@@ -33,17 +34,19 @@ async function procesarComando(textoOriginal, jid, sock) {
 🔢 *No. Mq:* ${partes[2]}
 ⚠️ *Falla:* ${capitalizar(partes[3])}
 #️⃣ *De falla actual en máquina:* ${partes[4]}
-👤 *Asignado a:* ${res.nombreTecnico} (@${res.telefonoTecnico})
+👤 *Nombre asignado:* ${res.nombreTecnico}
 
 ✅ *Satex System:* Reporte guardado con éxito.`;
 
+            // Enviamos el mensaje. El técnico recibe notificación por 'mentions', 
+            // pero su número ya no aparece escrito en el texto.
             await sock.sendMessage(jid, { 
                 text: mensajeRespuesta, 
                 mentions: [jidTecnico] 
             });
 
         } catch (e) {
-            console.log("Error:", e.message);
+            console.log("Error de conexión:", e.message);
         }
     }
 }
