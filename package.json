@@ -1,7 +1,7 @@
 {
-  "name": "mi-proyecto-servidor",
+  "name": "servidor-satex",
   "version": "1.0.0",
-  "description": "Servidor Satex",
+  "description": "Bot Satex",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
