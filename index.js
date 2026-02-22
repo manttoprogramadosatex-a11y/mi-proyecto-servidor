@@ -1,4 +1,4 @@
-const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
+const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion } = require('@whiskeysockets/baileys');
 const qrcode = require('qrcode');
 const express = require('express');
 const pino = require('pino');
@@ -10,50 +10,59 @@ let qrActual = null;
 app.get('/', async (req, res) => {
     if (qrActual) {
         const qrImagen = await qrcode.toDataURL(qrActual);
-        res.send(`<html><body style="background:#000;color:white;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;">
-            <h1 style="color:#25D366;">📱 ESCANEA EL QR AHORA</h1>
-            <div style="background:white;padding:20px;border-radius:15px;"><img src="${qrImagen}" style="width:300px;height:300px;"/></div>
-            <p style="margin-top:20px;color:#888;">Si no carga, refresca (F5).</p>
+        res.send(`<html><body style="background:#000;color:white;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;text-align:center;">
+            <h1 style="color:#25D366;font-size:30px;">📱 ESCANEA EL QR SATEX</h1>
+            <div style="background:white;padding:20px;border-radius:15px;box-shadow: 0 0 20px #25D366;">
+                <img src="${qrImagen}" style="width:300px;height:300px;"/>
+            </div>
+            <p style="margin-top:20px;color:#888;">Si el código no cambia en 30 segundos, presiona F5.</p>
         </body></html>`);
     } else {
-        res.send('<html><body style="background:#000;color:white;display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;text-align:center;"><h2>🔄 Sincronizando motor...<br>Refresca en 10 segundos.</h2></body></html>');
+        res.send('<html><body style="background:#000;color:white;display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;"><h2>🔄 Generando QR... Espera 10 segundos y refresca la página.</h2></body></html>');
     }
 });
 
 app.listen(port, '0.0.0.0', () => {
-    console.log('--- SERVIDOR SATEX ACTIVO ---');
+    console.log('🚀 SERVIDOR WEB SATEX LISTO');
     iniciarWhatsApp();
 });
 
 async function iniciarWhatsApp() {
-    // Usamos un nombre de sesión único para forzar la salida del bucle
-    const { state, saveCreds } = await useMultiFileAuthState('sesion_final_satex_v3');
-    
+    // Usamos una carpeta de sesión nueva para evitar choques
+    const { state, saveCreds } = await useMultiFileAuthState('sesion_emergencia_satex');
+    const { version } = await fetchLatestBaileysVersion();
+
     const sock = makeWASocket({
+        version,
         auth: state,
         logger: pino({ level: 'silent' }),
-        browser: ['Satex System', 'Chrome', '1.0.0']
+        browser: ['Satex System', 'Chrome', '1.0.0'],
+        printQRInTerminal: false
     });
 
     sock.ev.on('creds.update', saveCreds);
 
-    sock.ev.on('connection.update', (u) => {
-        const { connection, lastDisconnect, qr } = u;
+    sock.ev.on('connection.update', (update) => {
+        const { connection, lastDisconnect, qr } = update;
+        
         if (qr) {
             qrActual = qr;
-            console.log('✅ NUEVO QR GENERADO');
+            console.log('✅ QR GENERADO EXITOSAMENTE');
         }
-        if (connection === 'open') {
-            qrActual = null;
-            console.log('✅ BOT CONECTADO');
-        }
+
         if (connection === 'close') {
             qrActual = null;
-            const reintentar = lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
+            const codigoError = lastDisconnect?.error?.output?.statusCode;
+            const reintentar = codigoError !== DisconnectReason.loggedOut;
+            
+            console.log(`🔄 Conexión cerrada (Motivo: ${codigoError}). Reintentando...`);
             if (reintentar) {
-                console.log('🔄 Reintentando en 10 segundos para evitar choque...');
-                setTimeout(() => iniciarWhatsApp(), 10000); // Espera más larga para estabilizar
+                // Espera de 5 segundos para que Render mate instancias viejas
+                setTimeout(() => iniciarWhatsApp(), 5000);
             }
+        } else if (connection === 'open') {
+            qrActual = null;
+            console.log('✅ BOT SATEX CONECTADO Y ONLINE');
         }
     });
 }
