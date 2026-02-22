@@ -16,27 +16,42 @@ async function procesarComando(textoOriginal, jid, sock) {
         const partes = textoOriginal.split('.');
         if (partes.length < 4) return;
 
-        const numId = Math.floor(1000 + Math.random() * 9000); // ID numérico sin letras
+        const numId = Math.floor(1000 + Math.random() * 9000); 
         const numeroTel = jid.split('@')[0];
+        const maquinaNom = capitalizar(partes[1]);
+        const noMq = partes[2].trim();
+        const fallaDesc = capitalizar(partes[3]);
 
         const datos = {
             idOS: numId,
-            maquina: capitalizar(partes[1]),
-            noMq: partes[2].trim(),
-            falla: capitalizar(partes[3]),
+            maquina: maquinaNom,
+            noMq: noMq,
+            falla: fallaDesc,
             telefono: numeroTel
         };
 
         try {
+            // Enviar a Google Sheets
             await axios.post(URL_SHEETS, datos);
-            await sock.sendMessage(jid, { 
-                text: `🛠️ *OS GENERADA:* ${numId}\n\n✅ Reporte de servicio guardado correctamente.` 
-            });
+
+            // PRESENTACIÓN DEL DESPLIEGUE (Formato solicitado)
+            const mensajeRespuesta = 
+`🛠️ *OS GENERADA:* ${numId}
+
+📌 *Máquina:* ${maquinaNom}
+🔢 *No. Mq:* ${noMq}
+⚠️ *Falla:* ${fallaDesc}
+#️⃣ *De falla actual en máquina:* ${fallaDesc}
+
+✅ *Satex System:* Reporte guardado con éxito.`;
+
+            await sock.sendMessage(jid, { text: mensajeRespuesta });
+
         } catch (e) {
             console.log("Error en Sheets:", e.message);
+            await sock.sendMessage(jid, { text: "❌ Error al guardar en Sheets.\nRevisa la URL." });
         }
     }
-    // Puedes agregar más comandos aquí abajo sin afectar la conexión de WhatsApp
 }
 
 module.exports = { procesarComando };
