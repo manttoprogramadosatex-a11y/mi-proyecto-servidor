@@ -1,7 +1,5 @@
 const axios = require('axios');
-
-// URL de tu Script de Google (La que termina en /exec)
-const URL_SHEETS = 'https://script.google.com/macros/s/AKfycbycaPI7StqQdSIx-i4327scay-nL5dDp7121iERTQFN7EJ-b8zsIhVxtmhuQENlqEro/exec';
+const URL_SHEETS = 'TU_URL_DE_APPS_SCRIPT'; // Asegúrate de actualizarla
 
 const capitalizar = (texto) => {
     if (!texto) return "N/A";
@@ -11,45 +9,41 @@ const capitalizar = (texto) => {
 async function procesarComando(textoOriginal, jid, sock) {
     const textoLwr = textoOriginal.toLowerCase().trim();
 
-    // Comando para abrir Orden de Servicio
     if (textoLwr.startsWith('abrir.')) {
         const partes = textoOriginal.split('.');
-        if (partes.length < 4) return;
-
-        const numId = Math.floor(1000 + Math.random() * 9000); 
-        const numeroTel = jid.split('@')[0];
-        const maquinaNom = capitalizar(partes[1]);
-        const noMq = partes[2].trim();
-        const fallaDesc = capitalizar(partes[3]);
-
-        const datos = {
-            idOS: numId,
-            maquina: maquinaNom,
-            noMq: noMq,
-            falla: fallaDesc,
-            telefono: numeroTel
-        };
+        if (partes.length < 5) return;
 
         try {
-            // Enviar a Google Sheets
-            await axios.post(URL_SHEETS, datos);
+            const respuesta = await axios.post(URL_SHEETS, {
+                maquina: capitalizar(partes[1]),
+                noMq: partes[2].trim(),
+                falla: capitalizar(partes[3]),
+                cantidad: partes[4].trim(),
+                telefono: jid.split('@')[0]
+            });
 
-            // PRESENTACIÓN DEL DESPLIEGUE (Formato solicitado)
+            const res = respuesta.data;
+            const jidTecnico = res.telefonoTecnico + "@s.whatsapp.net";
+
+            // MENSAJE CON NOMBRE EXTRAÍDO DE EXCEL
             const mensajeRespuesta = 
-`🛠️ *OS GENERADA:* ${numId}
+`🛠️ *OS GENERADA:* ${res.idOS}
 
-📌 *Máquina:* ${maquinaNom}
-🔢 *No. Mq:* ${noMq}
-⚠️ *Falla:* ${fallaDesc}
-#️⃣ *De falla actual en máquina:* ${fallaDesc}
+📌 *Máquina:* ${capitalizar(partes[1])}
+🔢 *No. Mq:* ${partes[2]}
+⚠️ *Falla:* ${capitalizar(partes[3])}
+#️⃣ *De falla actual en máquina:* ${partes[4]}
+👤 *Asignado a:* ${res.nombreTecnico} (@${res.telefonoTecnico})
 
 ✅ *Satex System:* Reporte guardado con éxito.`;
 
-            await sock.sendMessage(jid, { text: mensajeRespuesta });
+            await sock.sendMessage(jid, { 
+                text: mensajeRespuesta, 
+                mentions: [jidTecnico] 
+            });
 
         } catch (e) {
-            console.log("Error en Sheets:", e.message);
-            await sock.sendMessage(jid, { text: "❌ Error al guardar en Sheets.\nRevisa la URL." });
+            console.log("Error:", e.message);
         }
     }
 }
