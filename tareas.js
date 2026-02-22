@@ -1,7 +1,7 @@
 const axios = require('axios');
 
 // URL de tu Script de Google (La que termina en /exec)
-const URL_SHEETS = 'https://script.google.com/macros/s/AKfycbx6HOaHWXJCg6vISRLgPOeTnhy4YOz2atQr-jFMpEb9rX0earo1w3kLCeGaWaX6UJE/exec';
+const URL_SHEETS = 'https://script.google.com/macros/s/AKfycbycaPI7StqQdSIx-i4327scay-nL5dDp7121iERTQFN7EJ-b8zsIhVxtmhuQENlqEro/exec';
 
 const capitalizar = (texto) => {
     if (!texto) return "N/A";
