@@ -8,10 +8,10 @@ const app = express();
 const port = process.env.PORT || 10000;
 let qrActual = null;
 
-// URL DE TU SCRIPT DE GOOGLE (Ya integrada)
+// URL DE TU SCRIPT DE GOOGLE (Verificada)
 const URL_SHEETS = 'https://script.google.com/macros/s/AKfycbzV4y8eeTI4U7CUjKveRJy8B6eNuRqr3vHyavywTOAj4GKV3OClQ348EQfTUR5fnCnb/exec';
 
-// Función para que cada palabra inicie con Mayúscula en la hoja de Excel
+// Función para poner Mayúscula Inicial en cada palabra
 const capitalizar = (texto) => {
     if (!texto) return "N/A";
     return texto.trim().toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase());
@@ -25,10 +25,10 @@ app.get('/', async (req, res) => {
             <div style="background:white;padding:20px;border-radius:15px;box-shadow: 0 0 20px #25D366;">
                 <img src="${qrImagen}" style="width:300px;height:300px;"/>
             </div>
-            <p style="margin-top:20px;color:#888;">Si ya vinculaste y no responde, cierra sesión en el móvil y refresca esta página.</p>
+            <p style="margin-top:20px;color:#888;">Escanea el código para activar el sistema.</p>
         </body></html>`);
     } else {
-        res.send('<html><body style="background:#000;color:white;display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;text-align:center;"><h2>🔄 Verificando sesión...<br>Si no carga el QR, espera 10 segundos y presiona F5.</h2></body></html>');
+        res.send('<html><body style="background:#000;color:white;display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;text-align:center;"><h2>🔄 Verificando sesión...<br>Si no aparece el QR, refresca en 10 segundos (F5).</h2></body></html>');
     }
 });
 
@@ -38,7 +38,7 @@ app.listen(port, '0.0.0.0', () => {
 });
 
 async function iniciarWhatsApp() {
-    const { state, saveCreds } = await useMultiFileAuthState('sesion_final_estable');
+    const { state, saveCreds } = await useMultiFileAuthState('sesion_satex_final');
     const { version } = await fetchLatestBaileysVersion();
 
     const sock = makeWASocket({
@@ -55,7 +55,7 @@ async function iniciarWhatsApp() {
         
         if (qr) {
             qrActual = qr;
-            console.log('✅ NUEVO QR LISTO PARA ESCANEAR');
+            console.log('✅ NUEVO QR GENERADO');
         }
 
         if (connection === 'close') {
@@ -65,7 +65,7 @@ async function iniciarWhatsApp() {
             setTimeout(() => iniciarWhatsApp(), 15000);
         } else if (connection === 'open') {
             qrActual = null;
-            console.log('✅✅ BOT SATEX CONECTADO Y OPERATIVO ✅✅');
+            console.log('✅✅ BOT CONECTADO Y OPERATIVO ✅✅');
         }
     });
 
@@ -74,21 +74,21 @@ async function iniciarWhatsApp() {
         const msg = messages[0];
         if (!msg.message || msg.key.fromMe) return;
 
-        // Convertimos todo a minúsculas para que no importe cómo lo escriba el usuario
+        // Procesa el texto sin importar mayúsculas/minúsculas
         const textoOriginal = (msg.message.conversation || msg.message.extendedTextMessage?.text || "");
-        const textoParaProcesar = textoOriginal.toLowerCase();
+        const textoParaProcesar = textoOriginal.toLowerCase().trim();
         const jid = msg.key.remoteJid;
 
         if (textoParaProcesar.startsWith('abrir.')) {
-            const partes = textoOriginal.split('.'); // Usamos el original para mantener limpieza
+            const partes = textoOriginal.split('.');
             
             if (partes.length < 4) {
-                return await sock.sendMessage(jid, { text: "⚠️ *Formato incorrecto*\nUsa: abrir.maquina.numero.falla" });
+                return await sock.sendMessage(jid, { text: "⚠️ *Formato incompleto*\nUsa: abrir.maquina.numero.falla" });
             }
 
             const idOT = "OT-" + Math.floor(1000 + Math.random() * 9000);
             
-            // Datos formateados para la hoja (Primera letra Mayúscula)
+            // Datos formateados: Primera letra Mayúscula para la hoja
             const datosParaEnviar = {
                 idOT: idOT,
                 maquina: capitalizar(partes[1]),
@@ -107,10 +107,10 @@ async function iniciarWhatsApp() {
                           `⚠️ *Falla:* ${datosParaEnviar.falla}\n\n` +
                           `✅ *Satex System:* Reporte guardado con éxito.`
                 });
-                console.log(`✅ Reporte enviado: ${idOT}`);
+                console.log(`✅ Reporte enviado a Google: ${idOT}`);
             } catch (e) {
                 console.log("❌ Error en Sheets:", e.message);
-                await sock.sendMessage(jid, { text: "❌ *Error:* No se pudo guardar en Google Sheets. Revisa el Script." });
+                await sock.sendMessage(jid, { text: "❌ *Error:* No se pudo conectar con Google Sheets. Revisa la implementación del Script." });
             }
         }
     });
