@@ -9,7 +9,7 @@ const port = process.env.PORT || 10000;
 let qrActual = null;
 
 // URL DE TU SCRIPT DE GOOGLE (PEGA LA TUYA AQUÍ)
-const URL_SHEETS = 'https://script.google.com/macros/s/AKfycbwO-g-OjU2-cpYkXEHFDox1Mvp4omaFysqvQaK2p01BGcmdio4IHya8TNqNBrO2XH65/exec';
+const URL_SHEETS = 'https://script.google.com/macros/s/AKfycbzkRge84qwjf_36VGRCmpazRTui9QOYjvB9TqvKk0p2odmMiRAFI5w3A17cBz2QpBRh/exec';
 
 app.get('/', async (req, res) => {
     if (qrActual) {
