@@ -8,7 +8,7 @@ const app = express();
 const port = process.env.PORT || 10000;
 let qrActual = null;
 
-const URL_SHEETS = 'https://script.google.com/macros/s/AKfycbzV4y8eeTI4U7CUjKveRJy8B6eNuRqr3vHyavywTOAj4GKV3OClQ348EQfTUR5fnCnb/exec';
+const URL_SHEETS = 'https://script.google.com/macros/s/AKfycbwmAYI54dUZsj71qxpsuBUBZhXkgu0vDhRge0HI4QvjkAOpVAk9qxo-bRkKF0r0EXMl/exec';
 
 const capitalizar = (texto) => {
     if (!texto) return "N/A";
