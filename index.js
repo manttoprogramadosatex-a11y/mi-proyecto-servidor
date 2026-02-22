@@ -9,14 +9,14 @@ const port = process.env.PORT || 10000;
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwO-g-OjU2-cpYkXEHFDoX1Mvp4omaFysqvQaK2p01BGcmdio4Ihya8TNqNBrO2XH65/exec';
 
 app.get('/', (req, res) => res.send('Bot Satex Vivo'));
-app.listen(port, '0.0.0.0', () => console.log(`🚀 Servidor en puerto ${port}`));
+app.listen(port, '0.0.0.0', () => console.log(`🚀 Servidor activo en puerto ${port}`));
 
 async function iniciarBot() {
     const { state, saveCreds } = await useMultiFileAuthState('auth_satex');
     
     const sock = makeWASocket({
         auth: state,
-        printQRInTerminal: true,
+        // Eliminamos la opción obsoleta y gestionamos el QR manualmente abajo
         logger: pino({ level: 'silent' })
     });
 
@@ -24,15 +24,20 @@ async function iniciarBot() {
 
     sock.ev.on('connection.update', (update) => {
         const { connection, lastDisconnect, qr } = update;
+        
+        // ESTO MOSTRARÁ EL QR EN LOS TRONCOS DE RENDER
         if (qr) {
-            console.log('--- ESCANEA EL QR ABAJO (AHORA SÍ APARECE) ---');
+            console.log('--------------------------------------------------');
+            console.log('👉 ESCANEA ESTE CÓDIGO QR CON TU WHATSAPP:');
+            console.log('--------------------------------------------------');
             qrcode.generate(qr, { small: true });
         }
+
         if (connection === 'close') {
             const error = lastDisconnect.error?.output?.statusCode;
             if (error !== DisconnectReason.loggedOut) iniciarBot();
         } else if (connection === 'open') {
-            console.log('✅ BOT SATEX VINCULADO CORRECTAMENTE');
+            console.log('✅ CONEXIÓN EXITOSA: El Bot Satex está trabajando.');
         }
     });
 
