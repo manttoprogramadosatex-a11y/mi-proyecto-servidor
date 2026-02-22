@@ -6,26 +6,23 @@ const pino = require('pino');
 
 const app = express();
 const port = process.env.PORT || 10000;
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwO-g-OjU2-cpYkXEHFDoX1Mvp4omaFysqvQaK2p01BGcmdio4Ihya8TNqNBrO2XH65/exec';
+const URL_SCRIPT = 'https://script.google.com/macros/s/AKfycbwO-g-OjU2-cpYkXEHFDoX1Mvp4omaFysqvQaK2p01BGcmdio4Ihya8TNqNBrO2XH65/exec';
 
-// 1. ARRANCAR EL SERVIDOR DE INMEDIATO (Esto engaña a Render para que no reinicie)
-app.get('/', (req, res) => res.send('Bot Satex Activo y Funcionando'));
+// Esto mantiene a Render feliz
+app.get('/', (req, res) => res.send('BOT SATEX ONLINE'));
 app.listen(port, '0.0.0.0', () => {
-    console.log(`\n🚀 SERVIDOR INICIADO EN PUERTO ${port}`);
-    console.log(`⏳ Iniciando motor de WhatsApp, por favor espera...\n`);
-    iniciarBot();
+    console.log(`\n--- SERVIDOR LISTO EN PUERTO ${port} ---`);
+    iniciar();
 });
 
-async function iniciarBot() {
-    // Usamos una carpeta de sesión nueva para evitar conflictos de intentos fallidos
-    const { state, saveCreds } = await useMultiFileAuthState('sesion_final_satex_v4');
+async function iniciar() {
+    // Usamos un nombre de carpeta totalmente nuevo para forzar el QR
+    const { state, saveCreds } = await useMultiFileAuthState('sesion_nueva_final');
     
     const sock = makeWASocket({
         auth: state,
-        logger: pino({ level: 'silent' }),
-        browser: ['Chrome (Satex)', 'MacOS', '3.0.0'],
-        connectTimeoutMs: 60000, // Tiempo extra para conexiones lentas
-        defaultQueryTimeoutMs: 0
+        logger: pino({ level: 'silent' }), // Silencio total de errores amarillos
+        browser: ['Ubuntu', 'Chrome', '20.0.04']
     });
 
     sock.ev.on('creds.update', saveCreds);
@@ -33,52 +30,42 @@ async function iniciarBot() {
     sock.ev.on('connection.update', (update) => {
         const { connection, lastDisconnect, qr } = update;
         
-        // 2. MOSTRAR EL QR SIN FILTROS
         if (qr) {
-            console.log('\n=========================================');
-            console.log('📢 ¡ESCANEAME AHORA CON TU WHATSAPP!');
-            console.log('=========================================');
+            console.log('\n\n\n\n\n');
+            console.log('#########################################');
+            console.log('👇 ESCANEA ESTE CÓDIGO AHORA MISMO:');
+            console.log('#########################################\n');
             qrcode.generate(qr, { small: true });
-            console.log('=========================================\n');
+            console.log('\n#########################################');
+            console.log('#########################################\n\n\n');
         }
 
         if (connection === 'close') {
-            const error = lastDisconnect.error?.output?.statusCode;
-            if (error !== DisconnectReason.loggedOut) {
-                console.log('🔄 Sincronizando motor... el QR aparecerá en breve.');
-                setTimeout(() => iniciarBot(), 3000); 
+            const code = lastDisconnect.error?.output?.statusCode;
+            if (code !== DisconnectReason.loggedOut) {
+                // Si falla, esperamos 10 segundos para no saturar los logs
+                setTimeout(() => iniciar(), 10000);
             }
         } else if (connection === 'open') {
-            console.log('\n✅ ¡CONEXIÓN EXITOSA! El bot ya está operando.\n');
+            console.log('\n✅ ¡CONECTADO EXITOSAMENTE!\n');
         }
     });
 
-    // Lógica de registro de OT
     sock.ev.on('messages.upsert', async ({ messages }) => {
         const msg = messages[0];
         if (!msg.message || msg.key.fromMe) return;
-
         const texto = msg.message.conversation || msg.message.extendedTextMessage?.text || "";
         if (!texto.includes('.')) return;
-
         const partes = texto.split('.');
         if (partes[0].trim().toLowerCase() === 'abrir') {
             const idOT = "OT-" + Math.floor(1000 + Math.random() * 9000);
-            const datos = {
-                idOT: idOT,
-                fecha: new Date().toLocaleDateString('es-MX'),
-                maquina: partes[1]?.trim(),
-                noMq: partes[2]?.trim(),
-                falla: partes[3]?.trim(),
-                telefono: msg.key.remoteJid.split('@')[0]
-            };
-
             try {
-                await axios.post(APPS_SCRIPT_URL, datos);
-                await sock.sendMessage(msg.key.remoteJid, { text: `🛠️ *OT GENERADA CON ÉXITO*\nID: *${idOT}*` });
-            } catch (e) {
-                console.log('Error al enviar datos:', e.message);
-            }
+                await axios.post(URL_SCRIPT, {
+                    idOT, maquina: partes[1], noMq: partes[2], falla: partes[3], 
+                    telefono: msg.key.remoteJid.split('@')[0]
+                });
+                await sock.sendMessage(msg.key.remoteJid, { text: `🛠️ *OT REGISTRADA:* ${idOT}` });
+            } catch (e) { console.log('Error Sheets:', e.message); }
         }
     });
 }
