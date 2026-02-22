@@ -8,8 +8,8 @@ const app = express();
 const port = process.env.PORT || 10000;
 let qrActual = null;
 
-// PEGA AQUÍ TU URL DE GOOGLE SHEETS
-const URL_SHEETS = 'https://script.google.com/macros/s/AKfycbzV4y8eeTI4U7CUjKveRJy8B6eNuRqr3vHyavywTOAj4GKV3OClQ348EQfTUR5fnCnb/exec';
+//
+const URL_SHEETS = 'https://script.google.com/macros/s/AKfycbxXwwRb1VGyMrk0x_pKvRqf5xY7MjF-C2-CK4yGWm7R6F84TbvrqmfPzu0CiepulCe7/exec';
 
 const capitalizar = (texto) => {
     if (!texto) return "N/A";
