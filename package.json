@@ -1,7 +1,7 @@
 {
-  "name": "servidor-satex-final",
+  "name": "servidor-satex",
   "version": "1.0.0",
-  "description": "Bot para OTs Satex",
+  "description": "Bot Satex para OTs",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
