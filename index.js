@@ -1,28 +1,47 @@
 const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
-const qrcode = require('qrcode-terminal');
+const qrcodeTerminal = require('qrcode-terminal');
+const qrcodeImage = require('qrcode');
 const axios = require('axios');
 const express = require('express');
 const pino = require('pino');
 
 const app = express();
 const port = process.env.PORT || 10000;
-const URL_SCRIPT = 'https://script.google.com/macros/s/AKfycbwO-g-OjU2-cpYkXEHFDoX1Mvp4omaFysqvQaK2p01BGcmdio4Ihya8TNqNBrO2XH65/exec';
+const URL_SHEETS = 'https://script.google.com/macros/s/AKfycbwO-g-OjU2-cpYkXEHFDoX1Mvp4omaFysqvQaK2p01BGcmdio4Ihya8TNqNBrO2XH65/exec';
 
-// Esto mantiene a Render feliz
-app.get('/', (req, res) => res.send('BOT SATEX ONLINE'));
-app.listen(port, '0.0.0.0', () => {
-    console.log(`\n--- SERVIDOR LISTO EN PUERTO ${port} ---`);
-    iniciar();
+let ultimoQR = null;
+
+// PAGINA WEB PARA VER EL QR SI FALLA LA CONSOLA
+app.get('/', async (req, res) => {
+    if (ultimoQR) {
+        // Genera el QR como una imagen para que lo escanees desde el navegador
+        const urlImagen = await qrcodeImage.toDataURL(ultimoQR);
+        res.send(`
+            <html>
+                <body style="display:flex;flex-direction:column;align-items:center;justify-content:center;background:#121212;color:white;font-family:sans-serif;">
+                    <h1>🤖 ESCANEA EL QR DE SATEX</h1>
+                    <img src="${urlImagen}" style="border:10px solid white; border-radius:10px;" />
+                    <p>Actualiza la página si el código expira.</p>
+                </body>
+            </html>
+        `);
+    } else {
+        res.send('<h1>Esperando código QR...</h1><p>Si el bot ya está conectado, verás este mensaje.</p>');
+    }
 });
 
-async function iniciar() {
-    // Usamos un nombre de carpeta totalmente nuevo para forzar el QR
-    const { state, saveCreds } = await useMultiFileAuthState('sesion_nueva_final');
+app.listen(port, '0.0.0.0', () => {
+    console.log(`🚀 SERVIDOR WEB ACTIVO EN PUERTO ${port}`);
+    iniciarBot();
+});
+
+async function iniciarBot() {
+    const { state, saveCreds } = await useMultiFileAuthState('sesion_emergencia');
     
     const sock = makeWASocket({
         auth: state,
-        logger: pino({ level: 'silent' }), // Silencio total de errores amarillos
-        browser: ['Ubuntu', 'Chrome', '20.0.04']
+        logger: pino({ level: 'silent' }),
+        browser: ['Chrome (Render)', 'MacOS', '3.0.0']
     });
 
     sock.ev.on('creds.update', saveCreds);
@@ -31,41 +50,36 @@ async function iniciar() {
         const { connection, lastDisconnect, qr } = update;
         
         if (qr) {
-            console.log('\n\n\n\n\n');
-            console.log('#########################################');
-            console.log('👇 ESCANEA ESTE CÓDIGO AHORA MISMO:');
-            console.log('#########################################\n');
-            qrcode.generate(qr, { small: true });
-            console.log('\n#########################################');
-            console.log('#########################################\n\n\n');
+            ultimoQR = qr; // Guardamos el QR para la página web
+            console.log('📢 ¡NUEVO QR GENERADO! Míralo en tu URL de Render.');
+            qrcodeTerminal.generate(qr, { small: true });
         }
 
         if (connection === 'close') {
-            const code = lastDisconnect.error?.output?.statusCode;
-            if (code !== DisconnectReason.loggedOut) {
-                // Si falla, esperamos 10 segundos para no saturar los logs
-                setTimeout(() => iniciar(), 10000);
-            }
+            ultimoQR = null;
+            const reintentar = lastDisconnect.error?.output?.statusCode !== DisconnectReason.loggedOut;
+            if (reintentar) setTimeout(() => iniciarBot(), 5000);
         } else if (connection === 'open') {
-            console.log('\n✅ ¡CONECTADO EXITOSAMENTE!\n');
+            ultimoQR = null;
+            console.log('✅ ¡WHATSAPP CONECTADO!');
         }
     });
 
+    // Lógica de las OTs (Tu código de siempre)
     sock.ev.on('messages.upsert', async ({ messages }) => {
         const msg = messages[0];
         if (!msg.message || msg.key.fromMe) return;
         const texto = msg.message.conversation || msg.message.extendedTextMessage?.text || "";
-        if (!texto.includes('.')) return;
-        const partes = texto.split('.');
-        if (partes[0].trim().toLowerCase() === 'abrir') {
+        if (texto.toLowerCase().startsWith('abrir.')) {
+            const partes = texto.split('.');
             const idOT = "OT-" + Math.floor(1000 + Math.random() * 9000);
             try {
-                await axios.post(URL_SCRIPT, {
+                await axios.post(URL_SHEETS, {
                     idOT, maquina: partes[1], noMq: partes[2], falla: partes[3], 
                     telefono: msg.key.remoteJid.split('@')[0]
                 });
                 await sock.sendMessage(msg.key.remoteJid, { text: `🛠️ *OT REGISTRADA:* ${idOT}` });
-            } catch (e) { console.log('Error Sheets:', e.message); }
+            } catch (e) { console.log('Error:', e.message); }
         }
     });
 }
