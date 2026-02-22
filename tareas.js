@@ -1,7 +1,5 @@
 const axios = require('axios');
-
-// REEMPLAZA CON TU URL DE GOOGLE APPS SCRIPT
-const URL_SHEETS = 'https://script.google.com/macros/s/AKfycbzUyBXvbkdf-Bxg47UIV5Fz8E6chykIIkncfbXGLXOCM-vt3OZ6DB6AKcFik5SScZ2S/exec';
+const URL_SHEETS = 'https://script.google.com/macros/s/AKfycbwdIxH6CYrphy6N9pSeon9HsN6qs3VgNK1mAuyPaCvbKQdUovBjK6KTqHLMav2yp5W6/exec'; // <--- PEGA TU URL
 
 const capitalizar = (texto) => {
     if (!texto) return "N/A";
@@ -9,9 +7,7 @@ const capitalizar = (texto) => {
 };
 
 async function procesarComando(textoOriginal, jid, sock) {
-    const textoLwr = textoOriginal.toLowerCase().trim();
-
-    if (textoLwr.startsWith('abrir.')) {
+    if (textoOriginal.toLowerCase().startsWith('abrir.')) {
         const partes = textoOriginal.split('.');
         if (partes.length < 5) return;
 
@@ -38,15 +34,8 @@ async function procesarComando(textoOriginal, jid, sock) {
 
 ✅ *Satex System:* Reporte guardado con éxito.`;
 
-            await sock.sendMessage(jid, { 
-                text: mensajeRespuesta, 
-                mentions: [jidTecnico] 
-            });
-
-        } catch (e) {
-            console.log("Error en Sheets:", e.message);
-        }
+            await sock.sendMessage(jid, { text: mensajeRespuesta, mentions: [jidTecnico] });
+        } catch (e) { console.log("Error:", e.message); }
     }
 }
-
 module.exports = { procesarComando };
