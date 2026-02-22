@@ -1,7 +1,7 @@
 {
   "name": "bot-satex-final",
   "version": "1.0.0",
-  "description": "Servidor Satex",
+  "description": "Bot Satex",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
