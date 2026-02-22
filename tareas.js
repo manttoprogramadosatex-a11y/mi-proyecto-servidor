@@ -1,5 +1,5 @@
 const axios = require('axios');
-const URL_SHEETS = 'https://script.google.com/macros/s/AKfycbyNMavsFS4a8Io8WTuq0c7IG2-IaiIWD4MINunafAhPRJdTybGhemoZrjtS7j_HvR4q/exec'; //
+const URL_SHEETS = 'https://script.google.com/macros/s/AKfycbxEc0HgCWuhmImajmS04al4pjXsJhQavfcmQxRPb68ULQmeciXlM_34pSqB5lBdNYSh/exec'; // <--- Pon tu URL aquí
 
 const capitalizar = (texto) => {
     if (!texto) return "N/A";
@@ -23,10 +23,8 @@ async function procesarComando(textoOriginal, jid, sock) {
             });
 
             const res = respuesta.data;
-            // Generamos el ID de WhatsApp para la notificación silenciosa
             const jidTecnico = res.telefonoTecnico + "@s.whatsapp.net";
 
-            // MENSAJE FINAL: Solo con el Nombre del Mecánico
             const mensajeRespuesta = 
 `🛠️ *OS GENERADA:* ${res.idOS}
 
@@ -38,17 +36,16 @@ async function procesarComando(textoOriginal, jid, sock) {
 
 ✅ *Satex System:* Reporte guardado con éxito.`;
 
-            // Enviamos el mensaje. El técnico recibe notificación por 'mentions', 
-            // pero su número ya no aparece escrito en el texto.
             await sock.sendMessage(jid, { 
                 text: mensajeRespuesta, 
                 mentions: [jidTecnico] 
             });
 
         } catch (e) {
-            console.log("Error de conexión:", e.message);
+            console.error("Error comunicando con Sheets:", e.message);
         }
     }
 }
 
+// ESTA LÍNEA ES VITAL PARA QUE INDEX.JS VEA EL CÓDIGO
 module.exports = { procesarComando };
